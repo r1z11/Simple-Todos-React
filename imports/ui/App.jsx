@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import React, { useState, Fragment } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
-import { TasksCollection } from '/imports/api/TasksCollection';
+import { TasksCollection } from '/imports/db/TasksCollection';
 import { Task } from './Task';
 import { TaskForm } from './TaskForm';
 import { LoginForm } from './LoginForm';
@@ -27,30 +27,30 @@ export const App = () => {
 
   const pendingOnlyFilter = { ...hideCompletedFilter, ...userFilter };
 
-  const tasks = useTracker(() => {
-    if (!user) {
-      return [];
+  const { tasks, pendingTasksCount, isLoading } = useTracker(() => {
+    const noDataAvailable = { tasks: [], pendingTasksCount: 0 };
+    if (!Meteor.user()) {
+      return noDataAvailable;
+    }
+    const handler = Meteor.subscribe('tasks');
+
+    if (!handler.ready()) {
+      return { ...noDataAvailable, isLoading: true };
     }
 
-    return TasksCollection.find(
+    const tasks = TasksCollection.find(
       hideCompleted ? pendingOnlyFilter : userFilter,
       {
         sort: { createdAt: -1 },
       }
     ).fetch();
+    const pendingTasksCount = TasksCollection.find(pendingOnlyFilter).count();
+
+    return { tasks, pendingTasksCount };
   });
 
-  const pendingTasksCount = useTracker(() => {
-    if (!user) {
-      return 0;
-    }
-
-    return TasksCollection.find(pendingOnlyFilter).count();
-  });
-
-  const pendingTasksTitle = `${
-    pendingTasksCount ? ` (${pendingTasksCount})` : ''
-  }`;
+  const pendingTasksTitle = `${pendingTasksCount ? ` (${pendingTasksCount})` : ''
+    }`;
 
   const logout = () => Meteor.logout();
 
@@ -71,10 +71,10 @@ export const App = () => {
         {user ? (
           <Fragment>
             <div className="user" onClick={logout}>
-              {user.username} 🚪
+              {user.username || user.profile.name} 🚪
             </div>
 
-            <TaskForm user={user} />
+            <TaskForm />
 
             <div className="filter">
               <button onClick={() => setHideCompleted(!hideCompleted)}>
