@@ -6,8 +6,8 @@ import '/imports/api/tasksMethods';
 import '/imports/api/tasksPublications';
 
 
-const SEED_USERNAME = "meteorite";
-const SEED_PASSWORD = "password";
+const SEED_USERNAME = "eric";
+const SEED_PASSWORD = "eric";
 
 const insertTask = (taskText) => TasksCollection.insert({ text: taskText });
 
